@@ -1,0 +1,14 @@
+version: 2
+
+models:
+  - name: fct_alpha_factors_daily
+    description: "Daily alpha-factor mart for quant dashboard"
+    columns:
+      - name: factor_date
+        tests: [not_null]
+      - name: symbol
+        tests: [not_null]
+      - name: alpha_score
+        tests: [not_null]
+      - name: alpha_rank
+        tests: [not_null]

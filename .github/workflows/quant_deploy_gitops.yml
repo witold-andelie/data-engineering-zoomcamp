@@ -1,0 +1,42 @@
+name: quant-deploy-gitops
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (default: current sha)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  bump_manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: vars
+        run: |
+          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
+            echo "tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update GitOps manifests
+        run: |
+          TAG=${{ steps.vars.outputs.tag }}
+          sed -i "s|collector:.*|collector:${TAG}|" quant-finance-pipeline/gitops/base/collector-deployment.yaml
+          sed -i "s|dashboard:.*|dashboard:${TAG}|" quant-finance-pipeline/gitops/base/dashboard-deployment.yaml
+
+      - name: Commit manifest change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add quant-finance-pipeline/gitops/base/*.yaml
+          git commit -m "chore(gitops): bump images to ${{ steps.vars.outputs.tag }}" || echo "No changes"
+          git push

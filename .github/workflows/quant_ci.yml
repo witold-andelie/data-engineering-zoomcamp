@@ -1,0 +1,48 @@
+name: quant-ci
+
+on:
+  pull_request:
+    paths:
+      - 'quant-finance-pipeline/**'
+      - '.github/workflows/quant_ci.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - 'quant-finance-pipeline/**'
+      - '.github/workflows/quant_ci.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check OPM artifacts
+        run: python3 quant-finance-pipeline/scripts/check_opm_consistency.py
+
+      - name: Compile collector
+        run: python3 -m py_compile quant-finance-pipeline/collector/app.py
+
+      - name: Compile dataflow pipeline
+        run: python3 -m py_compile quant-finance-pipeline/streaming-dataflow/pipeline.py
+
+      - name: Compile airflow DAG
+        run: python3 -m py_compile quant-finance-pipeline/batch-airflow/dags/market_batch_ingest_dag.py
+
+      - name: Compile streamlit app
+        run: python3 -m py_compile quant-finance-pipeline/dashboard-streamlit/app.py
+
+      - name: Setup dbt
+        uses: dbt-labs/setup-dbt@v1
+        with:
+          dbt-version: '1.8.8'
+
+      - name: dbt parse
+        working-directory: quant-finance-pipeline/dbt-quant
+        run: dbt parse
