@@ -77,28 +77,32 @@
 
 ---
 
-## 6. OPM（ObjectJS/opm）方法论落地
+## 6. OPM（Object Process Methodology）方法论落地
 
-将 OPM 作为工程流程“总入口”（而非只当命令工具）：
+> 说明：这里的 OPM 指 **Object Process Methodology（对象-过程方法论）**，用于架构分解、职责边界、过程约束与可追踪性，不是 CLI 工具。
 
-### 6.1 统一命令面
-- `opm install`：安装依赖、初始化开发环境
-- `opm compile`：统一 lint/typecheck/dbt compile
-- `opm build`：构建数据服务镜像
-- `opm publish`：推送镜像到 Artifact Registry
-- `opm deploy`：触发 Terraform + GitOps 发布
+将 OPM 作为工程治理“方法论中枢”，核心是把系统拆解为：
+- **Object（对象）**：如 `TradeEvent`、`Kline`、`RawFile`、`FeatureTable`、`DashboardTile`
+- **Process（过程）**：如“采集”“清洗”“入湖”“建模”“发布”“回滚”
+- **State（状态）**：如 `raw -> validated -> curated -> mart -> served`
 
-### 6.2 质量门禁策略
-在 OPM 流程中定义分层门禁：
+### 6.1 OPM 建模约束（建议产物）
+- `opm/system-context.opm`：系统上下文图（对象与过程边界）
+- `opm/data-lifecycle.opm`：数据生命周期图（状态迁移）
+- `opm/deployment-process.opm`：部署与回滚过程图
+- `opm/ownership-matrix.md`：对象-过程责任矩阵（团队分工）
+
+### 6.2 质量门禁策略（由 OPM 约束驱动）
+在 OPM 约束下定义分层门禁：
 1. 代码质量：ruff/black/mypy
 2. 数据质量：dbt test（not_null, unique, accepted_values）
-3. 合约质量：schema contract / 数据字典校验
+3. 合约质量：schema contract / 数据字典校验（与 OPM 对象定义一致）
 4. 部署质量：镜像扫描 + manifests 校验
 
-### 6.3 与 CI/CD 对齐
-GitHub Actions 只调用 OPM 命令，避免脚本分叉：
-- CI job: `opm compile` + `pytest` + `dbt compile`
-- CD job: `opm build` + `opm publish` + `opm deploy`
+### 6.3 与 CI/CD 对齐（不依赖 OPM 命令）
+GitHub Actions 直接执行标准工程命令，同时校验 OPM 产物一致性：
+- CI job: `pytest` + `dbt compile` + `dbt test` + OPM 模型一致性检查（自定义脚本）
+- CD job: `docker build` + 推送 Artifact Registry + 更新 GitOps manifests + Argo CD 同步
 
 ---
 
@@ -242,15 +246,13 @@ dbt 关键点：
 
 ---
 
-## 13. 你下一步可以直接执行的最小启动命令（示例）
+## 13. 你下一步可以直接执行的最小启动步骤（示例）
 
-1. 初始化项目骨架与依赖：`opm install`
-2. 本地质量检查：`opm compile`
-3. 运行单测：`pytest`
-4. dbt 编译：`dbt compile`
-5. 构建镜像：`opm build`
-6. 推送镜像：`opm publish`
-7. 部署开发环境：`opm deploy`
+1. 先产出 OPM 三个核心文档：系统上下文、数据生命周期、部署回滚流程
+2. 本地运行单测：`pytest`
+3. dbt 编译与测试：`dbt compile && dbt test`
+4. 构建并推送镜像：`docker build` + `docker push`
+5. 部署开发环境：`terraform apply` + 提交 GitOps manifests（由 Argo CD 同步）
 
 > 如果你愿意，我下一步可以基于这个设计给你输出：
 > - `terraform/` 目录结构模板
