@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: collector
+  namespace: quant-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: collector
+  template:
+    metadata:
+      labels:
+        app: collector
+    spec:
+      containers:
+        - name: collector
+          image: us-central1-docker.pkg.dev/PROJECT_ID/quant-platform/collector:latest
+          env:
+            - name: PUBLISH_MODE
+              value: pubsub
+            - name: SOURCE_SYMBOL
+              value: BTCUSDT
+            - name: PUBSUB_TOPIC
+              valueFrom:
+                secretKeyRef:
+                  name: quant-secrets
+                  key: pubsub_topic

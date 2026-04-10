@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard
+  namespace: quant-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dashboard
+  template:
+    metadata:
+      labels:
+        app: dashboard
+    spec:
+      containers:
+        - name: dashboard
+          image: us-central1-docker.pkg.dev/PROJECT_ID/quant-platform/dashboard:latest
+          ports:
+            - containerPort: 8501
+          env:
+            - name: BQ_PROJECT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: quant-secrets
+                  key: bq_project_id
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard
+  namespace: quant-platform
+spec:
+  selector:
+    app: dashboard
+  ports:
+    - port: 80
+      targetPort: 8501

@@ -1,0 +1,7 @@
+project_id              = "your-gcp-project-id"
+region                  = "us-central1"
+environment             = "dev"
+bucket_name             = "your-unique-qf-raw-bucket"
+bq_dataset_prefix       = "qf"
+pubsub_topic_name       = "trade-events"
+pubsub_subscription_name = "trade-events-stream-sub"
