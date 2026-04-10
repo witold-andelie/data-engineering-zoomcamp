@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/contracts/trade_event.schema.json",
+  "title": "TradeEvent",
+  "type": "object",
+  "required": [
+    "event_time",
+    "symbol",
+    "price",
+    "quantity",
+    "source",
+    "ingestion_mode"
+  ],
+  "properties": {
+    "event_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "symbol": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 20
+    },
+    "price": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "quantity": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "source": {
+      "type": "string",
+      "enum": ["binance_ws", "binance_rest", "alpha_vantage", "other"]
+    },
+    "ingestion_mode": {
+      "type": "string",
+      "enum": ["stream", "batch"]
+    },
+    "trade_id": {
+      "type": ["string", "null"]
+    },
+    "side": {
+      "type": ["string", "null"],
+      "enum": ["buy", "sell", null]
+    }
+  },
+  "additionalProperties": false
+}
