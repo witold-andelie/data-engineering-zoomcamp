@@ -169,6 +169,50 @@ dbt 关键点：
 
 ---
 
+## 10.1 α 因子（Alpha Factors）设计补充
+
+为了让项目更符合金融量化场景，建议在 `marts` 层新增 **alpha 因子主题表**（如 `mart_alpha_factors_daily`），至少包含以下可解释、可复现的因子：
+
+1. **动量因子（Momentum）**
+   - 示例：`mom_1d`, `mom_5d`, `mom_20d`
+   - 定义：`close_t / close_{t-n} - 1`
+   - 用途：识别趋势延续资产
+
+2. **反转因子（Reversal）**
+   - 示例：`rev_1d`
+   - 定义：`-(close_t / close_{t-1} - 1)`
+   - 用途：识别短期超涨超跌后的均值回归机会
+
+3. **波动率因子（Volatility）**
+   - 示例：`vol_20d`
+   - 定义：过去 20 日收益率标准差（可年化）
+   - 用途：风险分层、头寸控制
+
+4. **成交量冲击因子（Volume Shock）**
+   - 示例：`vol_zscore_1d`
+   - 定义：`(volume_t - mean(volume, n)) / std(volume, n)`
+   - 用途：捕捉异常交易活跃度与潜在信息流入
+
+5. **振幅因子（Intraday Range）**
+   - 示例：`range_1d`
+   - 定义：`(high_t - low_t) / close_t`
+   - 用途：衡量日内不确定性与交易拥挤度
+
+### 因子工程建议（dbt 实施）
+- 在 `staging` 统一价格与交易量口径（复权、时区、缺失值处理）
+- 在 `core` 计算标准收益率序列（`ret_1d`, `ret_5d`）
+- 在 `marts` 输出因子宽表，并附带：
+  - `factor_date`
+  - `symbol`
+  - `alpha_score`（可由多个因子标准化后加权）
+  - `alpha_rank`（按交易日分组排名）
+
+### 与 Dashboard 两个 Tile 的衔接
+- **Tile A（实时）**：展示 `vol_zscore_1d` 与短期动量的实时近似值（分钟刷新）
+- **Tile B（因子风险）**：展示 `alpha_score` Top/Bottom N、分组收益（可选）与波动率分层
+
+---
+
 ## 11. 12 周落地计划（可直接当项目排期）
 
 - **Week 1-2**：选题 + 数据源 PoC + Terraform 基础资源
@@ -190,6 +234,7 @@ dbt 关键点：
 - [ ] 有批处理链路（Airflow）
 - [ ] 有实时链路（Pub/Sub + Dataflow）
 - [ ] 有 dbt 转换与测试
+- [ ] 有可解释的 α 因子表（如 momentum/reversal/volatility）
 - [ ] 有 2 个 Tile 的可视化 Dashboard
 - [ ] 有 IaC（Terraform）
 - [ ] 有 CI/CD（GitHub Actions + Argo CD）
